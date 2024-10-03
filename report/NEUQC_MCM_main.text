@@ -1,0 +1,376 @@
+\documentclass{mcmthesis}
+\mcmsetup{%CTeX = false,                       %% Ê¹ÓÃ CTeX Ì××°Ê±£¬ÉèÖÃÎª true
+        tcn = 2322180, problem = D,             %% tcn is team control number
+        sheet = true, titleinsheet = true,    %% sheet stands for summary sheet
+        titlepage = false, abstract = true}    %% titlepage represents abstract page, true or false
+
+%\usepackage{palatino}   %%COMAP¹Ù·½°æÎï×ÖÌå
+%\usepackage{times}      %%ÂÞÂí×ÖÌå£¬Ö»¶ÔÕýÎÄÆð×÷ÓÃ
+\usepackage{txfonts}     %%ÊýÑ§¹«Ê½ÂÞÂí×ÖÌå£¬¶Ô¹«Ê½ºÍÕýÎÄ¶¼Æð×÷ÓÃ
+
+
+
+\title{Modeling UN Sustainability Goals with Simple and Score Dependent Networks}
+\author{\team}
+\date{\today}
+\begin{document}
+
+\begin{summary}
+In 2015 the United Nations (UN) created a list of 17 Sustainability and Development Goals (SDGs). These goals embraced a wide range of interdependent areas from climate action (SDG 13) to no poverty (SDG 1). Each country is given a score for each SDG based on the country’s performance on a number of SDG subgoals defined for a specific SDG \cite{Methodology, Audit, data}. By averaging the score in each subgoal, a total score for each SDG is obtained. The SDG subgoals are far more granular and specific metrics that can be practically understood and analyzed than the broader SDGs.  The goal of the UN is to maximize all 17 of these SDGs. However, this can only be effectively achieved if the nature of the relationships between the individual SDGs and their subgoals are well understood. 
+
+We modeled the relationships between the SDGs in two distinct ways: with a simple SDG network independent of a country’s SDG scores, and with a score-dependent SDG network  that took into account the score of the individual SDGs when calculating the strength of network edges. We modeled the simple SDG network in two ways. First, we created a network of all 17 SDGs with edge strength defined by the connected SDGs' Spearman correlation coefficient. Second, we created a bipartite graph, where the two disjoint sets of nodes were the 17 SDGs and the 99 SDG subgoals. By projecting the bipartite graph back on to the 17 SDGs, we approximately recover the SDG-only network, allowing us to make more nuanced analysis of SDG-SDG or SDG-SDG subgoal correlations. Using this bipartite network we were able to identify the most important SDG subgoals for overall SDG improvement and set them as priorities for future SDG work.
+
+For our score-dependent network, we calculated the Spearman correlation coefficient and linear slope between SDGs using data for a window of SDG scores around a central SDG score \cite{Felipe, Wu}. This allowed us to model the non-linearity of the relationships between SDGs as the SDG scores changed. Using this network we were able to analyze the effects of changes of a single SGD on the rest of the SGDs in the network, by propagating the change through the network using the calculated slope value for the given SDG score. This allowed us to predict the affects that changing one SDG will have on the rest of the SGDs in the network. We were able to use the network's predictive capacity to anticipate the effects of improvement on chosen SDG subgoals to the entire SDG network over the next ten years. 
+
+
+
+
+
+\end{summary}
+
+
+\maketitle
+
+
+
+%\newpage
+%\thispagestyle{empty}
+%\begin{center}
+%\bfseries\Large
+%Synopsis/Memo/Handout
+%\end{center}
+%
+%This is Synopsis/Memo/Handout.
+
+
+
+
+\thispagestyle{empty}
+\newpage
+\tableofcontents
+\newpage
+\setcounter{page}{1}
+\section{Introduction}
+In order to foster and promote peace, sustainability, and human health and flourishing the United Nations adopted The 2030 Agenda for Sustainable Development in 2015. A major component of this agenda are 17 Sustainability and Development Goals (SDGs), which embrace such diverse topics as  zero hunger (SDG 2) and climate action (SDG 13). These goals are interrelated and focus on reducing poverty and hunger, improving peace, justice, technology, and infrastructure as well as responsibly stewarding natural resources and access to water. Since 2000, the UN has tracked information indicating 166 countries and regions progress toward these diverse world goals. The UN measures this progress by evaluating a country's progress on many more specific SDG subgoal metrics that underlie each broader SDG.  
+\subsection{Problem Statement}
+	The 17 SDGs are significantly interdependent. Many SDGs such as world hunger and poverty show an obvious positive correlation: decreasing poverty increases access to nourishing food. However, some SDGs are probably connected negatively: decreasing poverty may increase irresponsible uses of natural resources. The goal of the UN is to take steps to maximize all 17 SDGs; this can only be effectively achieved if the relations between the individual SDGs are known and quantified. Furthermore, goals can be chosen better if it is known how changing one SDG effects other SDGs in the network, and it is understood what effects outside parameters such as pandemics, famines, and droughts have on the SDG network. The goal of our work is to model the relationship between SDGs as a network and then use this network to set optimal priorities for SDG achievement and model the effects of these priorities on SDGs over time.
+ 
+	The UN has analyzed the correlation between individual SDGs \cite{Methodology, Audit} and researchers have modeled the relationship between SDGs as a unipartite network \cite{Wu}. We hope to improve on this work by considering the effects of SDG subgoals on an SGD network and by taking into account the inherent non-linearity of relationships between SDGs as countries move toward SDG achievement.
+\newpage
+\subsection{Definitions}
+	In light of the complex nature of the SDG network we intend to model, it is beneficial to define a number of specialized terms that will be used throughout the course of the paper:
+ \begin{itemize}
+ 
+\item\textbf{Sustainable Development Goals (SDGs)}\\ 17 goals laid out by the UN embracing diverse achievements including reduction in poverty, hunger, and ecological damage. For a full list of the goals please refer to Appendix A.
+\item\textbf{SDG Subgoals}\\ The 17 SDGs are broken down by the UN into measurable subgoals that are used to calculate an overall score for each SDG. For example, SDG 7, Affordable and Clean Energy, is broken down into four subgoals: Population with access to electricity, population with access to clean fuels and technology for cooking, CO2 emissions from fuel combustion per total electricity output, and the share of renewable energy in total primary energy supply. SDG progress is calculated by averaging progress across the subgoals of the SDG. For a full list of SDG subgoals, please see the UN datasheet\cite{data}.
+
+\item \textbf{Synergy}\\
+A positive correlation between two SDGs.
+\item \textbf{Trade Off}\\
+A negative correlation between two SDGs.
+
+\end{itemize}
+
+The terms with the meanings defined above will be used throughout the paper, any additional terminology needed to understand our modeling analysis will be included within the paper body as needed.
+
+\subsection{Outline of Approach}
+We approached the objective of defining UN achievement goals to advance the world toward SDG fulfillment by breaking the network down into two distinct parts: a network edgeed by correlation between SDGs, and a prediction model to calculate how improvement in an SDG propagates through the network. We began by modeling both of these factors in a simple model independent of total SDG progress to gain an understanding of the general SDG relationships. We then refined the model to have its correlation depend on a country's total progress toward the SDGs. We analyzed the networks for modularity and connectivity to determine the most impactful SDG correlations, which we used to set priorities for SDG achievement and predict response to international crises. We considered the effects of SDG completion on the network analysis and estimated the amount that other SDGs may improve upon SDG completion.
+
+\subsection{Data Sets Used}
+The UN aggregates a large number of data sources to effectively track international progress toward the SDGs. This datasheet \cite{data} is made publicly available and includes progress values on SDGs and SDG subgoals for 156 countries from 2000 to 2021. Progress on the SDGs is calculated by averaging over the relevant SDG subgoals, which are 99 metrics chosen for their quantitave nature and availability of data \cite{Methodology}. SDG subgoal data is normalized from 0 to 100 by the formula
+\[x' = \frac{x - x_{min}}{x_{max} - x_{min}}\]
+where $x'$ is the normalized value, $x$ the raw data value, $x_{min}$ the bottom $2.5^{th}$ percentile of the data, and $x_{max}$ is the average of the top five data values or a scientific maximum, depending on the SDG subgoal \cite{Methodology}.
+
+\subsection{Assumptions}
+In order to construct our network of SDG relations and estimate the propagation of SDG progress, we made a number of assumptions:
+\begin{itemize}
+    \item
+    The UN’s calculation and data collection for SDG progress is a reliable method of quantifying SDG progress \cite{Methodology, Audit}
+    \item 
+     We assume that whether a pair of SDGs is negatively or positively correlated is independent of the SDGs values
+    \item
+    We assume that the propagation of SDG progress through our network can be locally approximated by a linear relationship
+\end{itemize}
+These assumptions formed the basis for our SDG network model of the 17 interrelated SDGs.
+
+\newpage
+\section{The Network}
+\subsection{The Simple Network Model}
+ 
+ The goal of our simple network was to understand the correlation between SDGs in a simple model that does not take the non-linearity of SDG correlation into account. In order to satisfactorily model a simple network of SDGs, we modeled SDG correlation at both the goal and subgoal level and compared the behavior of the resulting networks. In the networks, each of the 17 SDGs are represented by a node and are connected by edges with weight based on the Spearman correlation between SDG categories in the UN dataset. Based on our assumption that whether a pair of SDGs is positively or negatively correlated is independent of the SDG value, Spearman correlation is a valid measure of correlation, and works regardless of if the SDG relationships are linear \cite{Correlation}. We first created a network where edges directly connect the 17 SDG nodes. We then created a bipartite network where the SDGs are connected only through their correlation with the SDG subgoals.
+ 
+\subsubsection{Development of an SDG-Only Simple Network}
+Our first network of SDGs was created such that each SDG node was connected to other SDG nodes using correlative analysis between the individual SDGs. The strength of each edge was determined by the Spearman correlation coefficient calculated between the two SDGs connected by the edge. These correlations could be either positive or negative in nature: two SDGs might form a synergistic relationship where the improvement of one correlates with improvement in the other, or they might exist in a trade-off relationship where progress on one goal correlates with regress on another goal. This simple SDG network was similar to the network created by Wu et al. \cite{Wu}. Figure \ref{fig:screen} is a table of our network's Spearman coefficients.
+\begin{figure}[htp]
+    
+    \centering
+    \includegraphics[width=0.85\textwidth]{screen1.png}
+    \caption{Spearman Correlation Coefficients}
+    \label{fig:screen}
+\end{figure}
+\newpage
+\subsubsection{Bipartite Simple Network of SDGs Using Subgoals}
+	Each SDG is made up of a number of quantifiable subgoals. The UN measures these subgoals for each country and averages the country’s scores in each sub-goal to calculate a total score indicating the country’s progress toward achieving the overarching SDG. The data on these subgoals can be used to create a more nuanced network of SDGs. We created a bipartite network of the SDGs and their subgoals. A bipartite network is a network of two disjoint sets of nodes where edges of the network are only formed between nodes from different sets \cite{BioBipartite}. A simple example of a bipartite network is pictured in Figure \ref{fig:Bipartite}, where Group A and Group B are the two disjoint sets of nodes. For our bipartite network, one set of nodes was made up of the 17 SDGs and the second set of nodes was composed of the SDG subgoals. Edges were only formed between the SDG nodes and the SDG subgoal nodes. The strength of these edges was based on the Spearman correlation coefficient between the respective goal and subgoal, and the edges could either be positive, indicating a synergistic relationship, or negative, indicating a trade off relationship. 
+ \begin{figure}[htp]
+    
+    \centering
+    \includegraphics[width=\textwidth]{Bipartite}
+    \caption{Diagram depicting a basic bipartite network with two disjoint goups of nodes: Group A and Group B.}
+    \label{fig:Bipartite}
+\end{figure}
+	Once the bipartite network network between SDGs and SDG subgoals was formed. We analyzed the level of connection between the SDGs and all the subgoals.
+ 
+\newpage
+\subsection{The Score-Dependent Network Model}
+While our simple model is useful for understanding general trends in relationships between SDGs, it has significant flaws when it comes to predicting network response to changes in SDGs. In addition, the simple model does not take into account the intrinsic non-linearity of relationships between SDGs. A country with an SDG 2, Zero Hunger, score of 70 may see significant increase in their SDG 2 score when they increase their SDG 1, No Poverty, score, but a country with an SDG 2 score of 40 may only see a slight increase in their SDG 2 score for the same increase in SDG 1. In this example, the difference in response would likely be due to the fact that more money in a country with limited food supply translates to a much lower decrease in hunger than the same increase in money with a wide variety of available food. We sought to model this non-linearity of correlation with our score-dependent SDG network.
+
+To create our score-dependent network, we started with the same general SDG-only network as for the simple case. Our 17 SDGs formed the nodes of the network and the nodes were connected together with edges based on the strength of the correlation between the SDGs. However, for our score-dependent network we calculated the correlation only between countries within a particular SDG range. For each total SDG in the UN dataset, ranging from 38 to 86, we created a window of data centered on the given SDG score and extending 20 score points below and above the given score. For every integer score in the 38 to 86 range, we calculated edge weights using Spearman correlation between the data in the relevant window, creating a series of 49 networks that vary with total SDG. We can apply this same windowing method to the SDG subgoals and create a series of bipartite networks where edge strength is dependent on the total SDG score.
+\newpage
+\section{Analysis of the Networks}
+\subsection{Modularity Analysis}
+	Given the similarity of the SDG-only network and the projection of the subgoal bipartite network, we conducted our analysis on the SDG-only network for simplicity. In order to effectively set practical goals for SDG achievement we must understand how the SDGs are interconnected and what the effects changing one SDG will have on the other 16 SDGs. One way to understand the nature of interconnection of nodes in a network is by looking at the network's modularity. Modularity is used to describe ‘modules’, or groups, of nodes that are connected together with strong edges, but only weakly connected with surrounding nodes outside the module. These modules function as separate units of interconnected nodes that are only minorly connected with other modules. A given module can have either a high or low modularity value depending on the strength of the edge connecting the module nodes together. High strength connections give the module a high modularity value while low strength connections give it a low modularity value. By separating our network into different modules, we can better isolate the effect the changing one SDG value may have on the other 16 SDGs. Modularity is normally measured with the Louvian method based on the algorithm:
+ \begin{equation}
+     Q = \frac{1}{2m}\sum_{ij}^{} \left[A_{ij} - \frac{k_{i}k_{j}}{2m}\right]\delta(c_{i}c_{j})
+ \end{equation}
+ where $A_{ij}$ is the weight of the edge connecting node $i$ to node $j$, $k_{i}$ and $k_{j}$ are defined by the sum of the edge weights for all edges connected to nodes $i$ and $j$, $m$ is the sum of the total weights for the whole network, $\delta$ is the Kronecker delta function, and $c_{i}$ and $c_{j}$ represent each node's community. 
+	Since higher modulairty means a better delination between nodes in the network. Louvian works by optimizing this function over the runtime of the algorithmn. Communities are first found by optimizing modularity locally on all nodes. Then each community is grouped into one node and the algorithmn is repated. Applying the algorithm to our simple SDG network, we categorized the SDGs into four clusters, shown in Figure \ref{fig:module}.
+ \begin{figure}[htp]
+    
+    \centering
+    \includegraphics[width=10cm]{module louvian.png}
+    \caption{Clustering of simple SDG network, labeled with SDG number.}
+    \label{fig:module}
+\end{figure}
+ 
+\subsection{Page Rank Analysis}
+	Along with modularity, a second metric that is important to analyze as we seek to understand our network of SDGs is the connectivity of the nodes. The connectivity of a node is the measure of how many other nodes that node is connected to and the strength of those connections. A node with high connectivity will have many high strength edges to other nodes where as a node with low connectivity will have few low strength edges with other nodes. Below is the method to calculate the PageRank of a network.
+ 
+ \begin{equation}
+     PR(p_i) = \frac{1-d}{N} + d \sum_{p_j \in M(p_i)} \frac{PR (p_j)}{L(p_j)}
+ \end{equation}
+where $p_1, p_2, ..., p_N$ are the SDGs under consideration, $M(p_i)$ is the set of SDGs that link to $p_i$, $L(p_j)$ is the number of outbound connections on SDG $p_j$ and $N$ is the total number of SDGs.
+ 
+ For our network model analysis of connectivity is very important, particularly as we consider setting future priorities for SDG improvement. Considering our network before projection, when all of the subgoals were still present, we want to analyze the connectivity of each subgoal to determine which will be most important when setting future priorities. Running a connectivity importance analysis for our model, we found the subgoals in Table 1 to be the most important.
+\newpage
+ \begin{table}[htp]\caption{Page rank on SDG subgoals}
+\begin{center}
+\begin{tabular}{p{310pt}|p{90pt}}
+\toprule
+SDG subgoal     & Page rank score \\
+\midrule
+Fish caught by trawling or dredging (\%)
+     & $.00793$ \\
+Demand for family planning satisfied by modern methods
+  & .00790 \\
+  Life expectancy at birth & .00785 \\
+  CO2 emissions from fuel combustion per total electricity output & .00778 \\
+  Red List Index of species survival & .00771 \\
+  Births attended by skilled health personnel (\%) & .00769 \\
+  The Times Higher Education Universities Ranking
+& .00769 \\
+Anthropogenic wastewater that receives treatment (\%) & .00767 \\
+Ratio of female-to-male mean years of education received (\%) & .00767 \\
+Sustainable Nitrogen Management Index & .00755 \\
+Proportion of urban population living in slums (\%) & .00750 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+Focusing on the bottom half of the SDG indexed countries, we find that the ordering of priorities changes. That is, the PageRank importance of subgoals within the SDG network change as a factor of relative development of the country. This confirms our intuition on the non-linear relationship of SDGs, as shown in the following table.
+\begin{table}[htp]\caption{Page rank on SDG subgoals for network including only bottom 50\% of SDG scores}
+\begin{center}
+\begin{tabular}{p{310pt}|p{90pt}}
+\toprule
+SDG subgoal     & Page rank score \\
+\midrule
+Ratio of female-to-male mean years of education received (\%) & 0.00742 \\
+Sustainable Nitrogen Management Index & 0.00742 \\
+Demand for family planning satisfied by modern methods& 0.00734 \\
+Fish caught by trawling or dredging (\%)& 0.00731 \\
+Literacy rate (ages 15 to 24)
+& 0.00730 \\
+Life expectancy at birth& 0.00729 \\
+Red List Index of species survival & 0.00719 \\
+Palma ratio* & 0.00719 \\
+Logistics Performance Index: Quality of trade and transport-related infrastructure
+& 0.00718\\
+Births attended by skilled health personnel (\%)
+& 0.00716 \\
+Human Trophic Level**& 0.00715 \\
+ \bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+\newline
+\footnotesize{$*$ The share of all income received by the 10\% people with highest disposable income divided by the share of all income received by the 40\% people with the lowest disposable income. \cite{data} \newline
+$**$  Trophic levels are a measure of the energy intensity of diet composition and reflect the relative amounts of plants as opposed to animals eaten in a given country. A higher trophic level represents a greater level of consumption of energy-intensive animals. \cite{data}}\\
+
+ \newpage
+\section{Propagation of SDG Changes in the Network}
+ For many applications of an SDG network it is integral to be able to model the effects of a change in one SDG on the other SDGs in the network. Therefore, we will consider the effectiveness of both our simple and score-dependent models at propagating the change of an individual SDG throughout an SDG network. 
+ \subsection{Propagation Method for the Simple SDG Network}
+The simple SDG network is connected by edges based on Spearman correlation coefficients. Clustering this network using the Louvian method based suggests that changes made will be localized within these SDG communities. When an SDG value is changed, we can make a basic prediction by proportionally changing the SDGs in its community using linear regression.
+ \subsection{Propagation Method for the Score-Dependent SDG Network}
+ The score-dependent SDG network makes it easy to propagate SDG changes throughout the network. For each window of SDG score the slope modeling a linear relationship between each other SDG is calculated. Thus by moving the window through all the possible scores for each SDG and calculating the slopes we can approximate a nonlinear relationship between each SDG depending on the total SDG score. An example of one of the calculations we performed can be seen for the relationship between SDG 1, No Poverty, and SDG3, Good Health and Well-Being. These SDGs have an average correlation of $.601$ across all windows. In Figure \ref{fig:Poverty} we see the slope between SDG 1 and SDG 3 as a function of a country's average SDG score. 
+ \begin{figure}[htp]
+    
+    \centering
+    \includegraphics[width=10cm]{Poverty vs. Health}
+    \caption{Diagram depicts the slope connecting SDG 1 and SDG 3 as a function of average net SDG score}
+    \label{fig:Poverty}
+\end{figure}
+
+From the plot, we see that for low net SDG score such as 40, a country only sees a small increase in SDG 3 for a large increase in SDG 1 because the SDGs are only connected with a slope of approximately 0.3. Whereas, for a large net SDG score such as 60, a change in SDG 1 will produce a significant change in SDG 3 because the two SDGs are now connected with a slope greater that 0.6. This analysis makes intuitive sense. Low SDG countries countries typically have very limited medical resources; an increase in wealth for such a country will provide more money to put toward medical care, but will not initially translate to fully formed medical infrastructure and well trained medical personnel. Therefore, for increased wealth there are limited medical resources that wealth can purchase. However, for a high-net-SDG-country much of the medical infrastructure will already be in place. Therefore for an increase in wealth, there are already pathways in place for that wealth to improve and expand leading to a large increase in health care and citizen well being. 
+
+Using plots of this kind for every SDG relationship in our SDG score-dependent network, we can propagate changes to one SDG score throughout out SDG network and predict how other SDGs in the network will respond. Given a small change in SDG, we find the relevant window for the country's SDG and multiply those slopes by the change to predict how the other SDGs would change. These changes are only applied if the correlation between the two SDGs within the window is above a threshold correlation. We can use this method to approximate larger SDG changes as a series of small SDG changes, where each small SDG change has the predicted effect of increasing the total SDG to the next window of calculations.
+
+\newpage
+\section{Discussion and Application of Networks}
+	Now that we have mapped the modularities of our SDG network, considered the connectivity of our subgoals to the SDGs, and the propagation of SDG changes throughout out networks, we can use the information gained from this analysis to improve efforts toward SDG achievement and longevity. Specifically we wish to use our model to address three specific areas:
+ \begin{itemize}
+     \item \textbf{Set Priorities and Predict 10 Year Outcomes}
+     \item \textbf{Analyze the Network and Priority Response to a Completed SDG and Consider Possible New SDGs}
+     \item \textbf{Consider the Effects of Outside Parameters on Progress on SDGs, the SDG Network, and Priorities}
+ \end{itemize}
+
+\subsection{Priorities and Predictions}
+The UN hopes to achieve all 17 SDGs by the year 2030. In order for this to happen, practical priorities must be set that will effectively bring about SDG completion. How can these practical goals be chosen? The SDGs cover a wide range of topics and are very broadly defined. Priorities for SDG completion can only be effectively set by considering the connectivity of the SDG subgoals and their effects on the SDGs. The SDG subgoals capture the practical metrics that underlie the broad categories of their overarching SDG, and based on our network we know that many subgoals affect not only their own SDG, but many additional SDGs as well. Therefore the most effective priorities will be those that meet subgoals with the highest connectivity values.
+
+Using the Page rank algorithm on our SDG subgoal bipartite network, we found the following subgoals to be the most important for countries in the bottom half of the SDG index, after eliminating commonalities between the high SDG index countries.
+
+\begin{itemize}
+    \item Literacy rate (ages 15 to 24)
+    \item Palma ratio
+    \item Logistics Performance Index: Quality of trade and transport related infrastructure
+    \item Human Trophic Level
+\end{itemize}
+
+After having identified these subgoals as the top priorities for SDG achievement we now consider the effect of improving these subgoals over the next 10 years. We do this by assuming that through focused improvement of the chosen priorities those subgoals will be maximized by the ten year mark. We can then explore their effects on the network by propagating the subgoal's change throughout the score-dependent SDG network.
+
+\subsection{Effects of SDG Completion}
+	If through effective priority selection and implementation of the SDGs is met there will be significant effects on both our SDG network and future priorities.  The next set of priorities for countires after achieving the sub-SDGs above is as follows using PageRank.
+ \begin{itemize}
+     \item CO2 emission from fuel combustion per total electricity output
+     \item Anthropogenic wastewater that receives treatment
+     \item Proportion of urban population living in slums
+ \end{itemize}
+
+ Furthermore, if one of the SDGs is met, the UN must consider what new area of sustainability and development to elevate to SDG status. Based on our analysis of important subgoals for SDG development, we suggest that the UN nominate one of the most important SDG subgoals to the status of SDG. Analyzing the list of priorities in Section 5.1 we would recommend that one of these be promoted to the level of SDG. Given that Literacy rate (ages 15 to 24) ranked the highest of these priorities, we would argue that Literacy rate would be the most effective SDG replacement if one of the current SDGs was fulfilled.
+
+\subsection{Effects of Outside Parameters}
+	With additional time we would consider our SDG network, SDG priorities, and SDG progress as affected by outside parameters. Some of the most important outside parameters that are sure to impact SDGs are technological improvement, world pandemics, regional wars, refugee crises, and climate change. To model the effects of these crises on our SDGs, with extra time, we would create a set of measurable metrics that would indicate the occurrence of the crises and then create a bipartite graph similar to our SDG subgoal bipartite network, except in this case instead of subgoals we would use these preselected crises metrics. Our possible metrics were ground temperature \cite{temp1}\cite{temp2}\cite{temp3}\cite{temp4}\cite{temp5} and disability-adjusted life years for communicable diseases (DALY's) \cite{daly} where the data was normalized using the same methods as the UN \cite{Methodology}. With additional time, we would use these to model a bipartite network to analyze the effects our outside parameters on our SDG network.
+
+\newpage
+\section{Conclusion}
+	Through using both our simple and score-dependent SDG networks we were able to understand the interrelation of SDGs, their dependence on SDG subgoals, and get a general idea of SGD behavior when one SDG is achieved. Furthermore, we were able to use our network to set reasonable priorities for SDG completion.
+\subsection{Strengths \& Weaknesses}
+Considering our simple SDG network we found it has a number of strengths:
+\begin{itemize}
+    \item \textbf{Easy to Work With and Interpret Generally:}
+    Our SDG model was simple to analyze and yielded helpful results about modularity of SDGs and, through the introduction of a bipartite graph, the importance of specific SDGs.
+    \item \textbf{Bipartite Network Added Important Information on the Effect of Subgoals on the SDG Network:}
+    Through analysing the bipartite simple SDG network we were able to understand the importance of particular subgoals for the whole SDG network and set priorities based on this understanding.
+\end{itemize}
+We also discovered that our simple SDG network had a number of weaknesses:
+\begin{itemize}
+   \item\textbf{Assumption of Non-Linearity:}
+   We assumed that the relationships between SDGs were linear, which after further analysis using our score-dependent network we now know is not a good assumption.
+   \item\textbf{Limited Predictive Power:}
+   Because our network was connected with edges of strengths based on Spearman correlation coefficients it has very limited predictive power for effects of changes of SDGs.
+   \end{itemize}
+   Our score-dependent network also had a number of strengths:
+   \begin{itemize}
+       \item \textbf{Approximated the Non-Linearity of Relationships Between Networks:}
+       By using our data windowing technique to calculate correlations and slopes between SDGs over a range of SGD scores we were able to approximate the inherent non-linearity of the relationships formed between SDGs.
+       \item \textbf{Predictive Power for SDG Changes:}
+       Using the windowed calculation of the linear slopes between SDGs as a function of SDG score, we were able to predict the behavior of the SDGs in the network for a change in one of the SDGs.
+       
+   \end{itemize}
+
+   Our score-dependent SDG also had a number of weaknesses:
+   \begin{itemize}
+       \item \textbf{Linear Approximation of SDG relationships Over Data Windows:}
+       Although Approximating a linear relationship over a window of data was an improvement to the simple SDG network's fully linear approximation, it still did not perfectly model the non-linearity of the SDG relationships.
+       \item\textbf{Complicated to Apply:}
+       This more complex model was far more difficult to apply and understand intuitively.
+       
+       
+   
+    
+\end{itemize}
+\newpage
+\subsection{Sensitivity Analysis}
+A full sensitivity analysis of the network could be run by randomly varying the edge weights and seeing if the network clusters and Page rank are stable or unstable. Our network edge weights are based on calculations of Spearman correlation between the various SDGs, which is used for nonlinear data. We calculated the difference between these correlation values and Pearson correlation values below. The bottom triangle of the data shows absolute difference between the two correlation calculations, while the upper triangle shows the difference relative to the Spearman correlation. \newline
+\begin{figure}[htp]
+    
+    \centering
+    \includegraphics[width=\textwidth]{L3}
+    \caption{Pearson correlation coefficient compared to the Spearmean coefficient for the simple SGD network}
+    \label{fig:L3}
+\end{figure}
+\newline
+The propagation algorithm is dependent on what window size we use and what threshold correlation is used to determine if a change should be propagated through the network. Analyzing the algorithm's response to variation in these parameters would be important to understand the sensitivity of our model.
+
+\subsection{Application to Other Fields}
+
+	Our approach to networking SDGs using bipartite networks and windowed non-linearity score-dependent modeling provides an effective strategy in many diverse fields for effective priority setting and priority success modeling. Through the use of a bipartite models, companies and organizations can first set broad goals their group hopes to achieve. Then, they can brainstorm practical steps they might take to achieve these broad goals. At this point, it is expected that the company may not know how the practical steps will effect their goals, how significant the effect will be, and which specific goals will be affected. To answer these questions they can create a bipartite network with broad goals as one disjoint set of nodes and the practical steps as the second disjoint set of nodes. By connecting these through correlation and then analyzing connectivity of the practical steps, the company can easily set practical priorities by choosing the most connected steps to adopt. This method will be relatively simple for many companies or organizations to implement given the large scale of data collection many companies commonly implement. Once priorities have been set, companies can predict time scaled progress toward goal achievement by windowing their data and calculating a score-dependent network of goals and practical steps and propagating changes to the practical steps through their score-dependent network.
+
+ \subsection{Future Work}
+ Our simple model is well-understood and analyzed, but we would like to better analyze the SDG non-linearity in our network and propagation algorithm. In our network, we would analyze how the groupings change across windows centered on different total SDGs. We would also run a full error analysis on our propagation algorithm in order to benchmark its performance and verify that it does correctly predict future SDG values.
+
+\newpage
+\begin{thebibliography}{99}
+\bibitem{Felipe}
+Felipe-Lucia, María R., et al. “Land-Use Intensity Alters Networks between Biodiversity, Ecosystem Functions, and Services.” Proceedings of the National Academy of Sciences, vol. 117, no. 45, 2020, pp. 28140–28149., https://doi.org/10.1073/pnas.2016210117. 
+\bibitem{BioBipartite}Georgios A Pavlopoulos, Panagiota I Kontou, Athanasia Pavlopoulou, Costas Bouyioukos, Evripides Markou, Pantelis G Bagos, Bipartite graphs in systems biology and medicine: a survey of methods and applications, GigaScience, Volume 7, Issue 4, April 2018, giy014, https://doi.org/10.1093/gigascience/giy014
+\bibitem{Methodology}
+Lafortune, G.; Fuller, G.; Moreno, J.; Schmidt-Traub, G.; Kroll, C., SDG Index and Dashboards Detailed Methodological Paper, September 2018
+\bibitem{Audit}
+Papadimitriou, E.; Neves, A. R.; Becker, W., JRC Statistical Audit of the Sustainable Development Goals Index and Dashboards, EUR 29776 EN, 2019, ISBN 978-92-76-08995-7, doi:10.2760/723763, JRC116857
+\bibitem{data} Sachs, J., Lafortune, G., Kroll, C., Fuller, G., Woelm, F., (2022). From Crisis to Sustainable Development: the SDGs as Roadmap to 2030 and Beyond. Sustainable Development Report 2022. Cambridge: Cambridge University Press.
+\bibitem{Correlation} Schober, Patrick MD, PhD, MMedStat; Boer, Christa PhD, MSc; Schwarte, Lothar A. MD, PhD, MBA. Correlation Coefficients: Appropriate Use and Interpretation. Anesthesia \& Analgesia 126(5):p 1763-1768, May 2018. | DOI: 10.1213/ANE.0000000000002864 
+\bibitem{Wu} 
+Wu, X., Fu, B., Wang, S. et al. Decoupling of SDGs followed by re-coupling as sustainable development progresses. Nat Sustain 5, 452–459 (2022). https://doi.org/10.1038/s41893-022-00868-x
+\bibitem{temp1}
+Jones, P.D., New, M., Parker, D.E., Martin, S. and Rigor, I.G., 1999: Surface air temperature and its variations over the last 150 years. Reviews of Geophysics 37, 173-199, doi:10.1029/1999RG900002
+\bibitem{temp2}
+Kennedy, J. J., Rayner, N. A., Atkinson, C. P. and Killick, R. E., 2019: An ensemble data set of sea‐surface temperature change from 1850: the Met Office Hadley Centre HadSST.4.0.0.0 data set. Journal of Geophysical Research: Atmospheres 124, 7719-7763. https://doi.org/10.1029/2018JD029867
+\bibitem{temp4}
+Morice, C.P., Kennedy, J.J., Rayner, N.A., Winn, J.P., Hogan, E., Killick, R.E., Dunn, R.J.H., Osborn, T.J., Jones, P.D., and Simpson, I.R., 2021: An updated assessment of near-surface temperature change from 1850: the HadCRUT5 dataset. Journal of Geophysical Research 126, e2019JD032361, doi:10.1029/2019JD032361
+Osborn, T.J. and Jones, P.D., 2014: The CRUTEM4 land-surface air temperature data set: construction, previous versions and dissemination via Google Earth. Earth System Science Data 6, 61-68, doi:10.5194/essd-6-61-2014
+\bibitem{temp3}
+Osborn, T.J., Jones, P.D., Lister, D.H., Morice, C.P., Simpson, I.R., Winn, J.P., Hogan, E., and Harris, I.C., 2021: Land surface air temperature variations across the globe updated to 2019: the CRUTEM5 dataset. Journal of Geophysical Research: Atmospheres. 126, e2019JD032352, doi:10.1029/2019JD032352
+\bibitem{temp5}
+Climatic Research Unit (University of East Anglia) and Met Office,Temperature,Link	https://crudata.uea.ac.uk/cru/data/temperature/, September15, 2017.
+\bibitem{daly}
+IHME, Global Burden of Disease (2019).
+
+
+
+\end{thebibliography}
+
+%\hspace{2em}
+\newpage
+\begin{appendices}
+
+\section{United Nations Sustainable Developement Goals}
+GOAL 1: No Poverty\\
+GOAL 2: Zero Hunger\\
+GOAL 3: Good Health and Well-being GOAL 4: Quality Education\\
+GOAL 5: Gender Equality\\
+GOAL 6: Clean Water and Sanitation\\
+GOAL 7: Affordable and Clean Energy\\
+GOAL 8: Decent Work and Economic Growth \\
+GOAL 9: Industry, Innovation and Infrastructure \\
+GOAL 10: Reduced Inequality\\
+GOAL 11: Sustainable Cities and Communities \\
+GOAL 12: Responsible Consumption and Production\\
+GOAL 13: Climate Action\\
+GOAL 14: Life Below Water\\
+GOAL 15: Life on Land\\
+GOAL 16: Peace and Justice Strong Institutions \\
+GOAL 17: Partnerships to achieve the Goal
+
+
+\end{appendices}
+\end{document}
